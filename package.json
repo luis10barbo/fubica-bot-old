@@ -13,7 +13,9 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@discordjs/rest": "^1.1.0",
     "@types/node": "^18.7.14",
+    "axios": "^0.27.2",
     "dotenv": "^16.0.2",
     "nodemon": "^2.0.19",
     "rimraf": "^3.0.2",
