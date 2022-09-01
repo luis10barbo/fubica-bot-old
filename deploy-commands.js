@@ -14,9 +14,18 @@ const commands = [
         .setName("user")
         .setDescription("Nick ou id do jogador para fazer request")
         .setRequired(true)
+        .setMaxLength(15)
     )
     .addStringOption((option) =>
-      option.setName("mode").setDescription("Modo de jogo (em numero)")
+      option
+        .setName("mode")
+        .setDescription("Modo de jogo (em numero)")
+        .addChoices(
+          { name: "Standard", value: "0" },
+          { name: "Taiko", value: "1" },
+          { name: "Catch the Beat", value: "2" },
+          { name: "Mania", value: "3" }
+        )
     ),
 ].map((command) => command.toJSON());
 
