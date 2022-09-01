@@ -2,6 +2,7 @@ import { Client, GatewayIntentBits } from "discord.js";
 import { isStringNumber } from "./utilities";
 import axios from "axios";
 import dotenv from "dotenv";
+import { json } from "stream/consumers";
 dotenv.config();
 
 const token = process.env.BOT_TOKEN;
@@ -21,44 +22,63 @@ client.on("ready", () => {
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
-  const { commandName, options } = interaction;
+  try {
+    await interaction.deferReply();
+  } catch (error) {
+    console.log("O bot demorou demais para responder");
+    return;
+  }
 
-  if (commandName === "rs") {
-    await interaction.reply("trabalhando");
-    const userOption = interaction.options.getString("user"); // user: option at command (required for now)
-    const modeOption = interaction.options.getString("mode") || "0"; // mode: option at command (optional)
-    if (typeof userOption === null) return; // return if user: is null
+  try {
+    if (interaction.commandName === "rs") {
+      const userOption = interaction.options.getString("user") || ""; // user: option at command (required for now)
+      const modeOption = interaction.options.getString("mode") || "0"; // mode: option at command (optional)
+      console.log("debog 2");
 
-    if (isStringNumber(userOption) === true) {
-      const response = await axios({
-        method: "get",
-        url: `https://api.fubi.ca/get_player_scores?id=${userOption}&mode=${modeOption}&scope=recent&limit=1`,
-        responseType: "json",
-      }).catch((error) => console.log(error));
-      console.log(response);
+      if (typeof userOption === null) return; // return if user: is null
 
-      await interaction.editReply(JSON.stringify(response?.data));
-    } else {
-      const response = await axios({
-        method: "get",
-        url: `https://api.fubi.ca/get_player_scores?name=${userOption}&mode=${modeOption}&scope=recent&limit=1`,
-        responseType: "json",
-      }).catch((error) => console.log(error));
-      console.log(response);
+      const searchMode = (() => {
+        if (isStringNumber(userOption) === true) {
+          return "id";
+        } else {
+          return "name";
+        }
+      })();
 
-      await interaction.editReply(JSON.stringify(response?.data));
+      try {
+        await axios({
+          method: "get",
+          url: `https://api.fubi.ca/get_player_scores?${searchMode}=${userOption}&mode=${modeOption}&scope=recent&limit=1`,
+          responseType: "json",
+        })
+          .then(async (result) => {
+            await interaction.editReply(JSON.stringify(result.data));
+            console.log("debog 4");
+          })
+          .catch(async (error) => {
+            if (error.response) {
+              switch (error.response.data.status) {
+                case "Player not found.":
+                  await interaction.editReply("Jogador não encontrado");
+                  break;
+                case "Invalid gamemode.":
+                  await interaction.editReply("Modo não encontrado");
+                  break;
+                default:
+                  await interaction.editReply(
+                    "Algum erro ocorreu cara, se vira ae: " +
+                      JSON.stringify(error.response.data)
+                  );
+              }
+            } else if (error.request) {
+              console.log("request");
+            } else {
+              console.log("none");
+            }
+          });
+      } catch (error) {}
     }
-  }
-});
-
-client.on("messageCreate", (message) => {
-  if (message.channel.id !== "1014901140133007420") return;
-
-  if (message.author.id !== botId) {
-    // Message is not from bot
-    message.reply("testezao");
-  }
-  console.log(message.content);
+  } catch (error) {}
 });
 
 client.login(token);
